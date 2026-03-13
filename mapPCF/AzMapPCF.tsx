@@ -835,8 +835,6 @@ export class AzMapPCF extends React.Component<IAzMapPCFProps> {
   };
 
   private async fetchSasTokenFromAuthFunction(url: string): Promise<string> {
-    console.log('[AzMapPCF] Fetching SAS token from:', url);
-
     const headers: Record<string, string> = {
       Accept: 'application/json'
     };
@@ -845,8 +843,6 @@ export class AzMapPCF extends React.Component<IAzMapPCFProps> {
       method: 'GET',
       headers
     });
-
-    console.log('[AzMapPCF] Auth function response status:', response.status);
 
     if (!response.ok) {
       const responseText = await response.text();
@@ -859,7 +855,6 @@ export class AzMapPCF extends React.Component<IAzMapPCFProps> {
       const payload = await response.json() as { token?: string; accountSasToken?: string; sasToken?: string };
       const token = payload.token ?? payload.accountSasToken ?? payload.sasToken;
       if (token && token.trim().length > 0) {
-        console.log('[AzMapPCF] SAS token received, length:', token.trim().length);
         return token.trim();
       }
     }
@@ -868,8 +863,6 @@ export class AzMapPCF extends React.Component<IAzMapPCFProps> {
     if (tokenText.length === 0) {
       throw new Error('Auth function response did not include a token value.');
     }
-
-    console.log('[AzMapPCF] SAS token received (raw text), length:', tokenText.length);
     return tokenText;
   }
 
@@ -894,8 +887,6 @@ export class AzMapPCF extends React.Component<IAzMapPCFProps> {
     try {
       atlas.setDomain(mapDomain);
 
-      console.log('[AzMapPCF] initializeMap - usingSubscriptionKey:', usingSubscriptionKey, ', usingAuthFunction:', usingAuthFunction);
-
       const authOptions = usingSubscriptionKey
         ? {
           authType: atlas.AuthenticationType.subscriptionKey,
@@ -904,7 +895,6 @@ export class AzMapPCF extends React.Component<IAzMapPCFProps> {
         : {
           authType: atlas.AuthenticationType.sas,
           getToken: (resolve: (token: string) => void, reject: (error: string) => void): void => {
-            console.log('[AzMapPCF] getToken callback invoked by Azure Maps SDK');
             const authFunctionUrl = this.props.azureMapsAuthFunctionUrl;
             if (!authFunctionUrl) {
               console.error('[AzMapPCF] No auth function URL provided');
@@ -915,9 +905,6 @@ export class AzMapPCF extends React.Component<IAzMapPCFProps> {
             const handleTokenFetch = async (): Promise<void> => {
               try {
                 const token = await this.fetchSasTokenFromAuthFunction(authFunctionUrl);
-                console.log('[AzMapPCF] Raw token from function, length:', token.length);
-                console.log('[AzMapPCF] Token starts with:', token.substring(0, 50));
-                console.log('[AzMapPCF] Resolving raw JWT token to Azure Maps SDK');
                 resolve(token);
               } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
@@ -929,15 +916,12 @@ export class AzMapPCF extends React.Component<IAzMapPCFProps> {
           }
         };
 
-      console.log('[AzMapPCF] Creating atlas.Map with authOptions:', authOptions);
       this.map = new atlas.Map(this.mapContainerRef.current, {
         authOptions,
         center,
         zoom,
         style
       });
-
-      console.log('[AzMapPCF] Map instance created successfully');
       this.clearRuntimeError();
     } catch (error) {
       console.error('[AzMapPCF] Error during map initialization:', error);
@@ -951,7 +935,6 @@ export class AzMapPCF extends React.Component<IAzMapPCFProps> {
           return;
         }
 
-      console.log('[AzMapPCF] !!!MAP READY EVENT FIRED!!!');
       const dataSourceOptions: atlas.DataSourceOptions = {
         cluster: this.clusteringEnabled,
         clusterRadius: 45,
