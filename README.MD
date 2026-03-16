@@ -3,7 +3,7 @@
 - [What this PCF Does](#what-this-pcf-does)
 - [Why This Control Exists](#why-this-control-exists)
 - [Azure Maps Authentication Options](#azure-maps-authentication-options)
-- [SAS URL Azure Architecture (High Level)](#sas-url-azure-architecture-high-level)
+  - [SAS URL Azure Architecture (High Level)](#sas-url-azure-architecture-high-level)
 - [How To Use](#how-to-use)
   - [Prereqs](#prereqs)
   - [Part 1: Install the solution zip](#part-1-install-the-solution-zip)
@@ -14,6 +14,7 @@
 ## What this PCF Does
 ![](docs/media/AzureMapPCF.gif)
 
+PCF features include:
 - Azure Maps pin rendering from dataset rows
 - Point hover popups and click output (`selectedRecordId`)
 - In-map [Style picker control](https://learn.microsoft.com/en-us/azure/azure-maps/choose-map-style#add-the-style-picker-control)
@@ -41,7 +42,7 @@ For an introduction see https://learn.microsoft.com/en-us/azure/azure-maps/azure
 > [!NOTE]
 > You could extend this further by wrapping the Azure Function call in a Power Platform custom connector and then sharing the custom connector with your Power Apps makers. The customer connector should output the SAS Token to pass into the PCF. Using a custom connector would hide the Azure Function endpoint from the maker and add another authentization layer (this pcf currently works with an anonymous Azure Function). To learn more about this architecture see https://learn.microsoft.com/en-us/power-platform/architecture/reference-architectures/custom-connector-canvas
 
-## SAS URL Azure Architecture (High Level)
+### SAS URL Azure Architecture (High Level)
 When using `azureMapsAuthFunctionUrl`, the architecture is:
 
 1. **Canvas App + PCF control** requests a SAS token from your auth endpoint.
