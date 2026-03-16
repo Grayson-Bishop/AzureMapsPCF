@@ -1,5 +1,27 @@
 # Canvas App GeoData Search PCF
 
+- [What this PCF Does](#what-this-pcf-does)
+- [Why This Control Exists](#why-this-control-exists)
+- [Azure Maps Authentication Options](#azure-maps-authentication-options)
+- [SAS URL Azure Architecture (High Level)](#sas-url-azure-architecture-high-level)
+- [How To Use](#how-to-use)
+  - [Prereqs](#prereqs)
+  - [Part 1: Install the solution zip](#part-1-install-the-solution-zip)
+  - [Part 2: Choose and set up authentication](#part-2-choose-and-set-up-authentication)
+  - [Part 3: Configure the control in your Canvas app](#part-3-configure-the-control-in-your-canvas-app)
+  - [Canvas App Dataset Terminology](#canvas-app-dataset-terminology)
+
+## What this PCF Does
+![](docs/media/AzureMapPCF.gif)
+
+- Azure Maps pin rendering from dataset rows
+- Point hover popups and click output (`selectedRecordId`)
+- In-map [Style picker control](https://learn.microsoft.com/en-us/azure/azure-maps/choose-map-style#add-the-style-picker-control)
+- In-map [clustering](https://samples.azuremaps.com/?search=clustering) toggle (on by default)
+- In-map force re-focus on dataset button
+- In-map [zoom control](https://learn.microsoft.com/en-us/azure/azure-maps/map-add-controls#add-zoom-control)
+- Selection sync support via input/output record ids
+
 ## Why This Control Exists
 Geospatial controls are unavailable in Power Apps US Government (including GCC), per [Microsoft Learn](https://learn.microsoft.com/en-us/power-apps/maker/canvas-apps/geospatial-overview#prerequisites-for-full-support). So a PCF is required to get a map UX in a Power App in GCC/GCC-H/DOD tenants.
 
@@ -103,12 +125,3 @@ Table(
 ```
 
 Set each mapping property by typing the source column name as a string value (for example, `"Latitude"`, `"Longitude"`, `"AccountId"`). These mapping properties are not shown in the standard properties pane for the control. Use the property picker/search, find the PCF mapping property name, and enter the column name string there.
-
-## Runtime Features
-- Azure Maps pin rendering from dataset rows 
-- Point hover popups and click output (`selectedRecordId`)
-- In-map [Style picker control](https://learn.microsoft.com/en-us/azure/azure-maps/choose-map-style#add-the-style-picker-control)
-- In-map [clustering](https://samples.azuremaps.com/?search=clustering) toggle (on by default) 
-- In-map force re-focus on dataset button
-- In-map [zoom control](https://learn.microsoft.com/en-us/azure/azure-maps/map-add-controls#add-zoom-control)
-- Selection sync support via input/output record ids
