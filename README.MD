@@ -58,7 +58,7 @@ Typical Azure resources involved:
 
 ## How To Use
 ### Prereqs
-1. Premium licensing is required for this control. It uses external services (`atlas.microsoft.com` / `atlas.azure.us`), so treat it as a premium canvas app component. See https://learn.microsoft.com/en-us/power-apps/developer/component-framework/overview#licensing.
+1. Power Apps Premium licensing is required for this control. It uses external services (`atlas.microsoft.com` / `atlas.azure.us`), so treat it as a premium canvas app component. See https://learn.microsoft.com/en-us/power-apps/developer/component-framework/overview#licensing.
 2. PCF/code components must be allowed in the target environment before the control can be used in Canvas apps. In the Power Platform admin center (PPAC), verify the environment setting that enables code components for canvas apps. See https://learn.microsoft.com/en-us/power-apps/developer/component-framework/component-framework-for-canvas-apps#prerequisites
 
 ### Part 1: Install the solution zip
