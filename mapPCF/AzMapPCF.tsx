@@ -616,7 +616,7 @@ export class AzMapPCF extends React.Component<IAzMapPCFProps> {
       return;
     }
 
-    this.map.setStyle({ style });
+    this.map.setStyle({ style, language: 'en-US' });
   }
 
   private toggleStyleMenu = (): void => {
@@ -920,7 +920,8 @@ export class AzMapPCF extends React.Component<IAzMapPCFProps> {
         authOptions,
         center,
         zoom,
-        style
+        style,
+        language: 'en-US'
       });
       this.clearRuntimeError();
     } catch (error) {

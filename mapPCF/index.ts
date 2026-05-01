@@ -8,6 +8,11 @@ type EntityRecord = ComponentFramework.PropertyHelper.DataSetApi.EntityRecord;
 export class mapPCF implements ComponentFramework.ReactControl<IInputs, IOutputs> {
     private notifyOutputChanged: () => void = (): void => { return; };
     private selectedRecordId: string | undefined;
+    private isPagingRequestInFlight = false;
+    private lastPageFingerprint = "";
+    private hasConfiguredPageSize = false;
+    private accumulatedRecordIds: string[] = [];
+    private accumulatedRecords: Record<string, EntityRecord> = {};
 
     private readonly recordIdPropertySetName = "recordIdColumn";
     private readonly latitudePropertySetName = "latitudeColumn";
@@ -24,9 +29,22 @@ export class mapPCF implements ComponentFramework.ReactControl<IInputs, IOutputs
     }
 
     public updateView(context: ComponentFramework.Context<IInputs>): React.ReactElement {
+        const dataSet = context.parameters?.sampleDataSet;
+
+        const pageFingerprint = MapPcfHelpers.getPageFingerprint(dataSet);
+        if (this.isPagingRequestInFlight && pageFingerprint !== this.lastPageFingerprint) {
+            this.isPagingRequestInFlight = false;
+        }
+        this.lastPageFingerprint = pageFingerprint;
+
+        // The DataSet API is paged; accumulate each page so the control behaves consistently
+        // across hosts where loadNextPage either appends or replaces the current page.
+        this.syncAccumulatedRecords(dataSet);
+        this.ensureAllPagesLoaded(dataSet);
+
         const allocatedWidth = MapPcfHelpers.normalizeDimension(context.mode.allocatedWidth as number | string | undefined);
         const allocatedHeight = MapPcfHelpers.normalizeDimension(context.mode.allocatedHeight as number | string | undefined);
-        const points = MapPcfHelpers.mapDataSetToPoints(context.parameters?.sampleDataSet, {
+        const points = MapPcfHelpers.mapRecordsToPoints(this.accumulatedRecords, this.accumulatedRecordIds, {
             recordId: this.recordIdPropertySetName,
             latitude: this.latitudePropertySetName,
             longitude: this.longitudePropertySetName,
@@ -73,9 +91,103 @@ export class mapPCF implements ComponentFramework.ReactControl<IInputs, IOutputs
         this.selectedRecordId = recordId;
         this.notifyOutputChanged();
     };
+
+    private ensureAllPagesLoaded(dataSet: DataSet | undefined): void {
+        if (!dataSet?.paging) {
+            return;
+        }
+
+        if (MapPcfHelpers.isDataSetLoading(dataSet)) {
+            return;
+        }
+
+        const paging = dataSet.paging as {
+            hasNextPage?: boolean;
+            loadNextPage?: () => void;
+            setPageSize?: (size: number) => void;
+        };
+
+        if (!this.hasConfiguredPageSize && typeof paging.setPageSize === "function") {
+            try {
+                paging.setPageSize(10000);
+            } catch {
+                // Ignore and continue with provider defaults.
+            }
+            this.hasConfiguredPageSize = true;
+        }
+
+        if (!paging.hasNextPage) {
+            return;
+        }
+
+        if (this.isPagingRequestInFlight || typeof paging.loadNextPage !== "function") {
+            return;
+        }
+
+        this.isPagingRequestInFlight = true;
+        try {
+            paging.loadNextPage();
+        } catch {
+            this.isPagingRequestInFlight = false;
+        }
+    }
+
+    private syncAccumulatedRecords(dataSet: DataSet | undefined): void {
+        if (!dataSet?.records) {
+            this.accumulatedRecordIds = [];
+            this.accumulatedRecords = {};
+            return;
+        }
+
+        const recordIds = MapPcfHelpers.getRecordIds(dataSet);
+        const isFirstPage = MapPcfHelpers.isFirstPage(dataSet);
+        const shouldReplaceAccumulatedRecords = !dataSet.paging || (isFirstPage && !this.isPagingRequestInFlight);
+
+        if (shouldReplaceAccumulatedRecords) {
+            this.accumulatedRecordIds = [];
+            this.accumulatedRecords = {};
+        }
+
+        for (const recordId of recordIds) {
+            if (!this.accumulatedRecordIds.includes(recordId)) {
+                this.accumulatedRecordIds.push(recordId);
+            }
+
+            const record = dataSet.records[recordId];
+            if (record) {
+                this.accumulatedRecords[recordId] = record;
+            }
+        }
+    }
 }
 
 class MapPcfHelpers {
+    public static getPageFingerprint(dataSet: DataSet | undefined): string {
+        if (!dataSet) {
+            return "";
+        }
+
+        const recordIds = this.getRecordIds(dataSet);
+        return recordIds.join("|");
+    }
+
+    public static getRecordIds(dataSet: DataSet): string[] {
+        const fallbackRecordIds = Object.keys(dataSet.records);
+        return (dataSet.sortedRecordIds && dataSet.sortedRecordIds.length > 0)
+            ? dataSet.sortedRecordIds
+            : fallbackRecordIds;
+    }
+
+    public static isFirstPage(dataSet: DataSet | undefined): boolean {
+        const paging = dataSet?.paging as { hasPreviousPage?: boolean } | undefined;
+        return paging?.hasPreviousPage !== true;
+    }
+
+    public static isDataSetLoading(dataSet: DataSet | undefined): boolean {
+        const loadingState = (dataSet as { loading?: boolean } | undefined)?.loading;
+        return loadingState === true;
+    }
+
     public static toNonEmptyTrimmed(value: string | null | undefined): string | undefined {
         if (!value) {
             return undefined;
@@ -188,11 +300,19 @@ class MapPcfHelpers {
             return [];
         }
 
-        const fallbackRecordIds = Object.keys(dataSet.records);
-        const recordIds = (dataSet.sortedRecordIds && dataSet.sortedRecordIds.length > 0)
-            ? dataSet.sortedRecordIds
-            : fallbackRecordIds;
+        return this.mapRecordsToPoints(dataSet.records, this.getRecordIds(dataSet), columns);
+    }
 
+    public static mapRecordsToPoints(
+        records: Record<string, EntityRecord>,
+        recordIds: string[],
+        columns: {
+            recordId: string;
+            latitude: string;
+            longitude: string;
+            title: string;
+        }
+    ): IMapPoint[] {
         if (recordIds.length === 0) {
             return [];
         }
@@ -200,7 +320,7 @@ class MapPcfHelpers {
         const points: IMapPoint[] = [];
 
         for (const recordId of recordIds) {
-            const record = dataSet.records[recordId];
+            const record = records[recordId];
             if (!record) {
                 continue;
             }
